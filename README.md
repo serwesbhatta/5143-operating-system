@@ -7,4 +7,4 @@
 #### Website: none
 
 #### Image:
-<img src="images/photo.jpg" alt="Description of Photo" width="200" height="150">
+<img src="images/pp.jpg" alt="Profile of Photo" width="200" height="150">
