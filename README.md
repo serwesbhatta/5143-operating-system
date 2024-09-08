@@ -7,4 +7,4 @@
 #### Website: none
 
 #### Image:
-![profile picture](images/pp.jpg)
+<img src="images/photo.jpg" alt="Description of Photo" width="200" height="150">
