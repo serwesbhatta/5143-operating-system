@@ -7,4 +7,9 @@
 #### Website: none
 
 #### Image:
+
 <img src="images/pp.jpg" alt="Profile Photo" width="200">
+
+#### Avatar:
+
+<img src="images/avatar.jpg" width="75">
