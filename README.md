@@ -12,4 +12,4 @@
 
 #### Avatar:
 
-<img src="images/avatar.jpg" width="75">
+<img src="images/avatar.png" width="75">
