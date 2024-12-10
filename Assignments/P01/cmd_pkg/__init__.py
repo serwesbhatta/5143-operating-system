@@ -16,6 +16,7 @@ from .mv import mv
 from .tail import tail
 from .wc import wc
 from .sort import sort
+from .more import more
 from .run_history import Run_history
 from .fs_state_manager import FileSystemStateManager
 
@@ -40,4 +41,5 @@ __all__ = [
     "wc",
     "Run_history",
     "sort",
+    "more",
 ]

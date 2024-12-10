@@ -32,7 +32,6 @@ def rm(params=None):
                 "status": "fail",
                 "message": f"Error: File '{file_name}' does not exist in the current directory.",
             }
-            print()
     except:
         return {
             "status": "fail",
