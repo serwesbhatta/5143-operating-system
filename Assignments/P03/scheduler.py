@@ -1,7 +1,7 @@
 from time import sleep
 
 from components import Device, Job, Queue, SystemClock, Stats
-from api import getJob, init
+from api import getJob, init, getJobsLeft
 from config import config
 
 from rich.live import Live
@@ -154,21 +154,30 @@ class Scheduler:
         right_column = Layout(name="right")
         if algorithm == "MLFQ":
             right_column.split(
-                Layout(Panel(self.job_table), ratio=5, size=None),
-                Layout(Panel(self.priority_queue, title="Priority Queues"), size=None, ratio=3),
+                Layout(Panel(self.job_table), ratio=7, size=None),
                 Layout(
-                    Panel(str(self.clock.current_time), title="Clock"), size=None, ratio=1
+                    Panel(self.priority_queue, title="Priority Queues"),
+                    size=None,
+                    ratio=3,
+                ),
+                Layout(
+                    Panel(str(self.clock.current_time), title="Clock"),
+                    size=None,
+                    ratio=1,
                 ),
             )
         else:
             right_column.split(
                 Layout(Panel(self.job_table), ratio=2, size=None),
                 Layout(
-                    Panel(str(self.clock.current_time), title="Clock"), size=None, ratio=1
+                    Panel(str(self.clock.current_time), title="Clock"),
+                    size=None,
+                    ratio=1,
                 ),
             )
 
-        right_column["right"].ratio = 1
+        right_column["right"].ratio = 3
+        left_column["left"].ratio = 2
 
         layout.split_row(left_column, right_column)
         return layout
@@ -339,9 +348,15 @@ class Scheduler:
                                 self.running_queue.jobs, key=lambda x: x.priority
                             )
 
-                            if lowest_priority_job.priority > highest_priority_job.priority:
+                            if (
+                                lowest_priority_job.priority
+                                > highest_priority_job.priority
+                            ):
                                 for cpu in self.cpus:
-                                    if cpu.job and cpu.job.job_id == lowest_priority_job.job_id:
+                                    if (
+                                        cpu.job
+                                        and cpu.job.job_id == lowest_priority_job.job_id
+                                    ):
                                         cpu.free()
                                         cpu.load_job(highest_priority_job)
                                 self.ready_queue.enqueue(lowest_priority_job)
