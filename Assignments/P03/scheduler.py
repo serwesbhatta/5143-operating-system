@@ -2,6 +2,7 @@ from time import sleep
 
 from components import Device, Job, Queue, SystemClock, Stats
 from api import getJob, init
+from config import config
 
 from rich.live import Live
 from rich.table import Table
@@ -447,23 +448,6 @@ class Scheduler:
 
 
 def api_start():
-    config = {
-        "client_id": "serwes",
-        "min_jobs": 5,
-        "max_jobs": 10,
-        "min_bursts": 5,
-        "max_bursts": 15,
-        "min_job_interval": 5,
-        "max_job_interval": 10,
-        "burst_type_ratio": 0.7,
-        "min_cpu_burst_interval": 10,
-        "max_cpu_burst_interval": 70,
-        "min_io_burst_interval": 30,
-        "max_io_burst_interval": 100,
-        "min_ts_interval": 5,
-        "max_ts_interval": 25,
-        "priority_levels": [1, 2, 3, 4, 5],
-    }
     response = init(config)
     session_id = response["session_id"]
     start_clock = response["start_clock"]
