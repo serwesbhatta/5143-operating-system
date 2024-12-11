@@ -1,7 +1,9 @@
 from time import sleep
+import sys
 
 from components import Device, Job, Queue, SystemClock, Stats
 from api import getJob, init, getJobsLeft
+from utils import myKwargs
 import json
 
 from rich.live import Live
@@ -445,45 +447,53 @@ class Scheduler:
         client_id = filters["client_id"]
         session_id = filters["session_id"]
         clock_time = filters["clock_time"]
+        time_quantum = filters["time_quantum"]
+        sched = filters["sched"]
 
         with Live(self.generate_table("MLFQ"), refresh_per_second=20) as live:
             while True:
                 self.clock.increment()
                 clock_time = self.clock.get_time()
                 self.fetch_jobs(client_id, session_id, clock_time)
-                self.move_to_ready_queue(client_id, session_id, algorithm="MLFQ")
-                self.process_ready_queue(algorithm="MLFQ")
+                self.move_to_ready_queue(client_id, session_id, algorithm=sched)
+                self.process_ready_queue(algorithm=sched)
                 self.process_running_queue(
-                    client_id, session_id, algorithm="MLFQ", preemptive=False
+                    client_id, session_id, algorithm=sched, preemptive=False, time_quantum=time_quantum
                 )
                 self.process_waiting_queue()
                 self.process_io_queue(client_id, session_id)
-                live.update(self.generate_table(algorithm="MLFQ"))
+                live.update(self.generate_table(algorithm=sched))
                 sleep(0.5)
 
 
-def api_start():
-    with open("config.json") as f:
+def api_start(configFile, seed=None):
+    with open(configFile) as f:
         config = json.load(f)
-    print(config)
+
+    if seed is not None:
+        config["seed"] = seed
+
     response = init(config)
-    print(response)
     session_id = response["session_id"]
     start_clock = response["start_clock"]
-    return start_clock, session_id
+    time_quantum = response["time_slice"]
+
+    return start_clock, session_id, time_quantum
 
 
 if __name__ == "__main__":
-    start_clock, session_id = api_start()
-    cpus_names = ["CPU1", "CPU2", "CPU3", "CPU4"]
-    cpus = []
-    for cpu_name in cpus_names:
-        cpus.append(Device(cpu_name))
+    kwargs, args = myKwargs(sys.argv)
+    sched = kwargs["sched"]
+    seed = kwargs["seed"]
+    n_cpus = kwargs["cpus"]
+    n_ios = kwargs["ios"]
+    config = kwargs["config"]
 
-    ios_names = ["IO1", "IO2"]
-    ios = []
-    for io_name in ios_names:
-        ios.append(Device(io_name))
+    start_clock, session_id, time_quantum = api_start(config, seed)
+
+    cpus = [Device(f"CPU{i+1}") for i in range(n_cpus)]
+
+    ios = [Device(f"IO{i+1}") for i in range(n_ios)]
 
     system_clock = SystemClock(start_clock)
     scheduler = Scheduler(system_clock, cpus, ios)
@@ -491,7 +501,10 @@ if __name__ == "__main__":
     filters = {
         "client_id": "serwes",
         "session_id": session_id,
+        "time_quantum": time_quantum,
         "clock_time": clock_time,
+        "sched": sched,
+        "seed": seed,
     }
     scheduler.run(filters)
     stats = Stats()
