@@ -2,7 +2,7 @@ from time import sleep
 
 from components import Device, Job, Queue, SystemClock, Stats
 from api import getJob, init, getJobsLeft
-from config import config
+import json
 
 from rich.live import Live
 from rich.table import Table
@@ -463,7 +463,11 @@ class Scheduler:
 
 
 def api_start():
+    with open("config.json") as f:
+        config = json.load(f)
+    print(config)
     response = init(config)
+    print(response)
     session_id = response["session_id"]
     start_clock = response["start_clock"]
     return start_clock, session_id
