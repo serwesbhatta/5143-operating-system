@@ -113,23 +113,34 @@ class Scheduler:
         self.job_table.add_column(
             "Burst Duration", justify="center", style="blue", no_wrap=True
         )
-        self.job_table.add_column(
-            "Time Slice Remaining", justify="center", style="red", no_wrap=True
-        )
+        if algorithm == "MLFQ" or algorithm == "RR":
+            self.job_table.add_column(
+                "Time Slice Remaining", justify="center", style="red", no_wrap=True
+            )
         self.job_table.add_column(
             "CPU Wait Time", justify="center", style="red", no_wrap=True
         )
 
         for job in self.jobs.jobs:
-            self.job_table.add_row(
-                str(job.job_id),
-                str(job.arrival_time),
-                str(job.priority),
-                job.burst_type,
-                str(job.burst_duration),
-                str(job.time_slice_remaining),
-                str(job.cpu_wait_time),
-            )
+            if algorithm == "MLFQ" or algorithm == "RR":
+                self.job_table.add_row(
+                    str(job.job_id),
+                    str(job.arrival_time),
+                    str(job.priority),
+                    job.burst_type,
+                    str(job.burst_duration),
+                    str(job.time_slice_remaining),
+                    str(job.cpu_wait_time),
+                )
+            else:
+                self.job_table.add_row(
+                    str(job.job_id),
+                    str(job.arrival_time),
+                    str(job.priority),
+                    job.burst_type,
+                    str(job.burst_duration),
+                    str(job.cpu_wait_time),
+                )
 
         if algorithm == "MLFQ":
             self.priority_queue = Table(title="Priority Queues")
@@ -170,7 +181,7 @@ class Scheduler:
             )
         else:
             right_column.split(
-                Layout(Panel(self.job_table), ratio=2, size=None),
+                Layout(Panel(self.job_table), ratio=10, size=None),
                 Layout(
                     Panel(str(self.clock.current_time), title="Clock"),
                     size=None,
@@ -453,6 +464,11 @@ class Scheduler:
         clock_time = filters["clock_time"]
         time_quantum = filters["time_quantum"]
         sched = filters["sched"]
+        preemptive = filters["preemptive"]
+        priority = False
+
+        if sched == "PR":
+            priority = True
 
         with Live(self.generate_table("MLFQ"), refresh_per_second=20) as live:
             while True:
@@ -460,9 +476,13 @@ class Scheduler:
                 clock_time = self.clock.get_time()
                 self.fetch_jobs(client_id, session_id, clock_time)
                 self.move_to_ready_queue(client_id, session_id, algorithm=sched)
-                self.process_ready_queue(algorithm=sched)
+                self.process_ready_queue(algorithm=sched, priority=priority)
                 self.process_running_queue(
-                    client_id, session_id, algorithm=sched, preemptive=False, time_quantum=time_quantum
+                    client_id,
+                    session_id,
+                    algorithm=sched,
+                    preemptive=preemptive,
+                    time_quantum=time_quantum,
                 )
                 self.process_waiting_queue()
                 self.process_io_queue(client_id, session_id)
@@ -492,6 +512,11 @@ if __name__ == "__main__":
     n_cpus = kwargs["cpus"]
     n_ios = kwargs["ios"]
     config = kwargs["config"]
+    
+    if "preemptive" in kwargs:
+        preemptive = kwargs["preemptive"]
+    else:
+        preemptive = False
 
     start_clock, session_id, time_quantum = api_start(config, seed)
 
@@ -509,6 +534,7 @@ if __name__ == "__main__":
         "clock_time": clock_time,
         "sched": sched,
         "seed": seed,
+        "preemptive": preemptive,
     }
     scheduler.run(filters)
     stats = Stats()
