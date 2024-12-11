@@ -275,7 +275,7 @@ class Scheduler:
                 if algorithm == "FCFS":
                     job.decrement_duration()
                     if job.burst_complete():
-                        for cpu in cpus:
+                        for cpu in self.cpus:
                             if cpu.job and cpu.job.job_id == job.job_id:
                                 cpu.free()
                         job.get_job_burst(client_id, session_id, job.job_id)
@@ -285,10 +285,10 @@ class Scheduler:
                         elif job.burst_type == "EXIT":
                             self.exit_queue.enqueue(job, 0)
                             self.running_queue.remove(job)
-                            self.time_slice_remaining = None
-                            self.cpu_wait_time = None
+                            job.time_slice_remaining = None
+                            job.cpu_wait_time = None
                         else:
-                            self.ready_queue.enqueue(job)
+                            self.ready_queue.enqueue(job, 0)
                             self.running_queue.remove(job)
                 elif algorithm == "RR":
                     if job.time_slice_remaining is None:
@@ -301,6 +301,7 @@ class Scheduler:
                         for cpu in self.cpus:
                             if cpu.job and cpu.job.job_id == job.job_id:
                                 cpu.free()
+                        job.time_slice_remaining = time_quantum
                         job.get_job_burst(client_id, session_id, job.job_id)
                         if job.burst_type == "IO":
                             self.waiting_queue.enqueue(job, 0)
@@ -308,18 +309,21 @@ class Scheduler:
                         elif job.burst_type == "EXIT":
                             self.exit_queue.enqueue(job, 0)
                             self.running_queue.remove(job)
-                            self.time_slice_remaining = None
-                            self.cpu_wait_time = None
+                            self.time_slice_remaining = 0
+                            self.cpu_wait_time = 0
                         else:
-                            self.ready_queue.enqueue(job)
+                            self.ready_queue.enqueue(job, 0)
                             self.running_queue.remove(job)
-                    elif job.time_slice_remaining == 0:
+
+                    if job.time_slice_remaining == 0:
                         for cpu in self.cpus:
                             if cpu.job and cpu.job.job_id == job.job_id:
                                 cpu.free()
                         job.time_slice_remaining = time_quantum
-                        self.ready_queue.enqueue(job)
-                        self.running_queue.remove(job)
+
+                        if not job.burst_complete():
+                            self.ready_queue.enqueue(job, 0)
+                            self.running_queue.remove(job)
 
             if algorithm == "PR":
                 for job in self.running_queue.jobs:
