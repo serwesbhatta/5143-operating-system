@@ -10,30 +10,35 @@ def mkdir(params = None):
 
     directory_path_arr = directory_path.split("/")
     directory_name = directory_path_arr.pop()
-    directory_path = "/".join(directory_path_arr)
-
+    
     if "." in directory_name:
         return {
             "status": "fail",
             "message": "\nDirectory name cannot have extensions."
         }
-
-    try:
-        directory_path_response = dir_path_helper(directory_path)
-    except:
-        return {
-            "status": "fail",
-            "message": "\nCannot look for the specified directory."
-        }
     
-    if directory_path_response["status"] == "fail":
-        return {
-            "status": "fail",
-            "message": f"\nError: {directory_path_response['message']}"
-        }
+    pid = Fs_state_manager.get_pid()
+    oid = Fs_state_manager.get_oid()
+    
+    if len(directory_path_arr) !=0:
+        directory_path = "/".join(directory_path_arr)
 
-    pid = directory_path_response["pid"]
-    oid = directory_path_response["oid"]
+        try:
+            directory_path_response = dir_path_helper(directory_path)
+        except:
+            return {
+                "status": "fail",
+                "message": "\nCannot look for the specified directory."
+            }
+        
+        if directory_path_response["status"] == "fail":
+            return {
+                "status": "fail",
+                "message": f"\nError: {directory_path_response['message']}"
+            }
+
+        pid = directory_path_response["pid"]
+        oid = directory_path_response["oid"]
 
     filters = {"oid": oid, "pid": pid, "name": directory_name}
     existing_dir = call_api("dirs", params=filters)
