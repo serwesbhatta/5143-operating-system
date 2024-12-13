@@ -18,16 +18,18 @@ def cat(params=None):
 
         try:
             response = call_api("files", params=filters)
-            
+
         except:
             return {"status": "fail", "message": "\nCould not make a call to the api"}
 
         if response["status"] == "success":
             content = response["message"][0]["contents"]
             total_file_contents += content
-        
+
         else:
             return {"status": "fail", "message": "\nDidn't find the file you were looking for."}
+
+    total_file_contents = total_file_contents.lstrip()
 
     return {
         "status": "success",
