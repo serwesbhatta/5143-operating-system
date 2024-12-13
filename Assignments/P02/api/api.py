@@ -151,8 +151,8 @@ def create_directory(data: IdentifyFileOrDir):
 
 
 @app.delete("/deleteDir")
-def delete_directory(oid: int, pid: int, directory_name: str):
-    return Delete_directory(fsDB, oid, pid, directory_name)
+def delete_directory(data: IdentifyFileOrDir):
+    return Delete_directory(fsDB, data.oid, data.pid, data.name)
 
 
 @app.get("/dirs")
