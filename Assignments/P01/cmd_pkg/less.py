@@ -37,7 +37,9 @@ def less(params=None):
             print(f"\n--- Showing lines {start_line+1} to {end_line} ---\n")
             print(page_content)
             if i < num_pages - 1:  # Check if not the last page
-                input("Press Enter to continue to the next page...")
+                input("Press Enter to see the next page, type 'q' to quit: ")
+                if input().lower() == "q":
+                    break
         return {"status": "success", "message": "\nEnd of file."}
     else:
         return {
