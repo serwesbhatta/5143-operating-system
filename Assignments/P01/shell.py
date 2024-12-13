@@ -237,7 +237,7 @@ if __name__ == "__main__":
                         response = call_api("write", "put", data=redirection_filters)
 
                         if response["status"] == "success":
-                            print(response["message"])
+                            pass
                         else:
                             print(f"Failed to write to file {redirection_file_path}")
                     except:
