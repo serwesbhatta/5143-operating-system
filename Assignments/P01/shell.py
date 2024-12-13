@@ -55,7 +55,7 @@ def load_commands():
 def execute_command(main_cmd, args, input_data=None):
     if main_cmd in cmds:
         # Check if the command can accept input data and provide it if available
-        if input_data is not None and main_cmd in ["grep", "head", "tail"]:
+        if input_data is not None and main_cmd in ["grep", "head", "tail", "wc"]:
             result = cmds[main_cmd](params=args, input=input_data)
         else:
             result = cmds[main_cmd](params=args) if args else cmds[main_cmd]()

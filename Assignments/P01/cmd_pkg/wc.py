@@ -16,7 +16,7 @@ def wc(params=None, input=None):
     flags = flags_response["flags"]
 
     if flags_response["invalid_flags"]:
-        return {"status": "fail", "message": "\nOnvalid flags"}
+        return {"status": "fail", "message": "\nInvalid flags"}
 
     if flags:
         if "l" in flags:
@@ -25,7 +25,7 @@ def wc(params=None, input=None):
             w_flag = True
         params = [param for param in params if not param.startswith("-")]
 
-    if len(params) == 0:
+    if len(params) == 0 and input == None:
         return {
             "status": "fail",
             "message": "\nPlease enter the file name."
