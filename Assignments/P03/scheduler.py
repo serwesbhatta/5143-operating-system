@@ -1,5 +1,6 @@
 from time import sleep
 import sys
+import csv
 
 from components import Device, Job, Queue, SystemClock, Stats
 from api import getJob, init, getJobsLeft
@@ -11,6 +12,7 @@ from rich.table import Table
 from rich.layout import Layout
 from rich.text import Text
 from rich.panel import Panel
+from rich import print
 
 
 class Scheduler:
@@ -46,6 +48,113 @@ class Scheduler:
         self.q3.time_slice = 15
         self.q4.time_slice = 20
         self.q5.time_slice = 25
+
+        # Statistics
+        self.total_turnaround_time = 0
+        self.total_ready_wait_time = 0
+        self.total_io_wait_time = 0
+        self.completed_jobs = 0
+
+    def record_job_statistics(self, job):
+        """Record statistics for a completed job."""
+        self.total_turnaround_time += job.completion_time - job.arrival_time
+        self.total_ready_wait_time += job.ready_wait_time
+        self.total_io_wait_time += job.io_wait_time
+        self.completed_jobs += 1
+
+    def calculate_statistics(self):
+        """Calculate and return average statistics and CPU utilization."""
+        cpu_busy_time = sum(cpu.busy_time for cpu in self.cpus)
+        total_time = self.clock.current_time
+
+        cpu_utilization = (
+            (cpu_busy_time / (len(self.cpus) * total_time)) * 100
+            if total_time > 0
+            else 0
+        )
+        average_turnaround_time = (
+            self.total_turnaround_time / self.completed_jobs
+            if self.completed_jobs > 0
+            else 0
+        )
+        average_ready_wait_time = (
+            self.total_ready_wait_time / self.completed_jobs
+            if self.completed_jobs > 0
+            else 0
+        )
+        average_io_wait_time = (
+            self.total_io_wait_time / self.completed_jobs
+            if self.completed_jobs > 0
+            else 0
+        )
+
+        return {
+            "CPU Utilization (%)": cpu_utilization,
+            "Average Turnaround Time": average_turnaround_time,
+            "Average Ready Wait Time": average_ready_wait_time,
+            "Average IO Wait Time": average_io_wait_time,
+        }
+
+    def write_statistics_to_csv(
+        self, filename, algorithm, num_cpus, num_ios, time_quantum=None
+    ):
+        """Write aggregate statistics to a CSV file."""
+        stats = self.calculate_statistics()
+        fieldnames = [
+            "Algorithm",
+            "Number of CPUs",
+            "Number of IO Devices",
+            "Time Quantum",
+            "CPU Utilization (%)",
+            "Average Turnaround Time",
+            "Average Ready Wait Time",
+            "Average IO Wait Time",
+        ]
+
+        # Write to CSV
+        try:
+            with open(filename, mode="a", newline="") as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+                # Write header if the file is empty
+                if csvfile.tell() == 0:
+                    writer.writeheader()
+
+                writer.writerow(
+                    {
+                        "Algorithm": algorithm,
+                        "Number of CPUs": num_cpus,
+                        "Number of IO Devices": num_ios,
+                        "Time Quantum": time_quantum,
+                        "CPU Utilization (%)": stats["CPU Utilization (%)"],
+                        "Average Turnaround Time": stats["Average Turnaround Time"],
+                        "Average Ready Wait Time": stats["Average Ready Wait Time"],
+                        "Average IO Wait Time": stats["Average IO Wait Time"],
+                    }
+                )
+        except Exception as e:
+            print(f"Error writing to CSV: {e}")
+
+    def end_simulation(self, algorithm, num_cpus, num_ios, time_quantum=None):
+        """Display final statistics and write to CSV at the end of the simulation."""
+        stats = self.calculate_statistics()
+
+        # Display statistics using Rich
+        from rich.table import Table
+
+        stats_table = Table(title="Simulation Statistics")
+        stats_table.add_column("Metric", justify="left", style="cyan")
+        stats_table.add_column("Value", justify="right", style="magenta")
+
+        for key, value in stats.items():
+            stats_table.add_row(key, f"{value:.2f}")
+
+        print(stats_table)
+
+        # Write to CSV
+        self.write_statistics_to_csv(
+            "simulation_results.csv", algorithm, num_cpus, num_ios, time_quantum
+        )
 
     def generate_table(self, algorithm=None):
         # Main layout
@@ -257,6 +366,9 @@ class Scheduler:
 
                 job.cpu_wait_time += 1
 
+        for job in self.ready_queue.jobs:
+            job.ready_wait_time += 1
+
         for cpu in self.cpus:
             if cpu.is_free():
                 if not self.ready_queue.is_empty():
@@ -266,15 +378,20 @@ class Scheduler:
                         )
                     job = self.ready_queue.dequeue()
                     cpu.load_job(job)
+                    cpu.busy_time += 1
                     self.running_queue.enqueue(job, 0)
 
     def process_waiting_queue(self):
         """Processes the waiting queue."""
+        for job in self.waiting_queue.jobs:
+            job.io_wait_time += 1
+
         for io in self.ios:
             if io.is_free():
                 if not self.waiting_queue.is_empty():
                     job = self.waiting_queue.dequeue()
                     io.load_job(job)
+                    io.busy_time += 1
                     self.io_queue.enqueue(job, 0)
 
     def process_running_queue(
@@ -285,6 +402,12 @@ class Scheduler:
             for job in self.running_queue.jobs:
                 if algorithm == "FCFS":
                     job.decrement_duration()
+                    
+                    # For stats
+                    for cpu in self.cpus:
+                        if cpu.job and cpu.job.job_id == job.job_id:
+                            cpu.busy_time += 1
+
                     if job.burst_complete():
                         for cpu in self.cpus:
                             if cpu.job and cpu.job.job_id == job.job_id:
@@ -294,6 +417,10 @@ class Scheduler:
                             self.waiting_queue.enqueue(job, 0)
                             self.running_queue.remove(job)
                         elif job.burst_type == "EXIT":
+                            # For stats
+                            job.completion_time = self.clock.current_time
+                            self.record_job_statistics(job)
+
                             self.exit_queue.enqueue(job, 0)
                             self.running_queue.remove(job)
                             job.time_slice_remaining = None
@@ -307,6 +434,11 @@ class Scheduler:
 
                     job.decrement_duration()
                     job.time_slice_remaining -= 1
+                    
+                    # For stats
+                    for cpu in self.cpus:
+                        if cpu.job and cpu.job.job_id == job.job_id:
+                            cpu.busy_time += 1
 
                     if job.burst_complete():
                         for cpu in self.cpus:
@@ -318,6 +450,10 @@ class Scheduler:
                             self.waiting_queue.enqueue(job, 0)
                             self.running_queue.remove(job)
                         elif job.burst_type == "EXIT":
+                            # For stats
+                            job.completion_time = self.clock.current_time
+                            self.recoprd_job_statistics(job)
+
                             self.exit_queue.enqueue(job, 0)
                             self.running_queue.remove(job)
                             self.time_slice_remaining = 0
@@ -339,6 +475,12 @@ class Scheduler:
             if algorithm == "PR":
                 for job in self.running_queue.jobs:
                     job.decrement_duration()
+
+                    # For stats
+                    for cpu in self.cpus:
+                        if cpu.job and cpu.job.job_id == job.job_id:
+                            cpu.busy_time += 1
+
                     if job.burst_complete():
                         for cpu in self.cpus:
                             if cpu.job and cpu.job.job_id == job.job_id:
@@ -348,6 +490,10 @@ class Scheduler:
                             self.waiting_queue.enqueue(job, 0)
                             self.running_queue.remove(job)
                         elif job.burst_type == "EXIT":
+                            # For stats
+                            job.completion_time = self.clock.current_time
+                            self.record_job_statistics(job)
+
                             self.exit_queue.enqueue(job, 0)
                             self.running_queue.remove(job)
                         else:
@@ -384,6 +530,11 @@ class Scheduler:
                 for job in self.running_queue.jobs:
                     job.decrement_duration()
                     job.time_slice_remaining -= 1
+                    
+                    # For stats
+                    for cpu in self.cpus:
+                        if cpu.job and cpu.job.job_id == job.job_id:
+                            cpu.busy_time += 1
 
                     if job.burst_complete():
                         for cpu in self.cpus:
@@ -405,6 +556,8 @@ class Scheduler:
                             self.waiting_queue.enqueue(job, 0)
                             self.running_queue.remove(job)
                         elif job.burst_type == "EXIT":
+                            job.completion_time = self.clock.current_time
+                            self.record_job_statistics(job)
                             self.exit_queue.enqueue(job, 0)
                             self.running_queue.remove(job)
                         else:
@@ -443,20 +596,6 @@ class Scheduler:
                 else:
                     job.decrement_duration()
 
-    def is_done(self):
-        """Returns True if all queues are empty."""
-        return all(
-            queue.is_empty()
-            for queue in [
-                self.new_queue,
-                self.ready_queue,
-                self.running_queue,
-                self.waiting_queue,
-                self.io_queue,
-                self.exit_queue,
-            ]
-        )
-
     def run(self, filters):
         """Runs the scheduler."""
         client_id = filters["client_id"]
@@ -472,6 +611,10 @@ class Scheduler:
 
         with Live(self.generate_table("MLFQ"), refresh_per_second=20) as live:
             while True:
+                jobs_left = getJobsLeft(client_id, session_id)
+                if not jobs_left:
+                    print("No more jobs left. Ending session.")
+                    break
                 self.clock.increment()
                 clock_time = self.clock.get_time()
                 self.fetch_jobs(client_id, session_id, clock_time)
@@ -487,7 +630,7 @@ class Scheduler:
                 self.process_waiting_queue()
                 self.process_io_queue(client_id, session_id)
                 live.update(self.generate_table(algorithm=sched))
-                sleep(0.5)
+                # sleep(0.5)
 
 
 def api_start(configFile, seed=None):
@@ -512,7 +655,7 @@ if __name__ == "__main__":
     n_cpus = kwargs["cpus"]
     n_ios = kwargs["ios"]
     config = kwargs["config"]
-    
+
     if "preemptive" in kwargs:
         preemptive = kwargs["preemptive"]
     else:
@@ -537,6 +680,7 @@ if __name__ == "__main__":
         "preemptive": preemptive,
     }
     scheduler.run(filters)
-    stats = Stats()
-    stats.calculate_stats(scheduler.exit_queue)
-    stats.print_stats()
+    # stats = Stats()
+    # stats.calculate_stats(scheduler.exit_queue)
+    # stats.print_stats()
+    scheduler.end_simulation(sched, n_cpus, n_ios, time_quantum)

@@ -4,6 +4,7 @@ class Device:
     def __init__(self, name):
         self.name = name
         self.job: Job = None
+        self.busy_time = 0
 
     def load_job(self, job: Job):
         """Loads a job onto the device."""

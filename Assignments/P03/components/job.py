@@ -8,7 +8,9 @@ class Job:
         self.priority = priority
         self.cpu_wait_time = 0
         self.turnaround_time = 0
+        self.ready_wait_time = 0
         self.io_wait_time = 0
+        self.completion_time = 0
         self.burst_id = 0
         self.burst_type = ""
         self.burst_duration = 0
