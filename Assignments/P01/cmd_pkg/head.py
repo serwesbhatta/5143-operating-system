@@ -46,13 +46,14 @@ def head(params=None, input = None):
 
         params.pop(flag_index)
 
-        if params == []:
+        if (params == [] or params == None) and input == None:
             return {
                 "status": "fail",
                 "message": "\nPlease enter the file name as well"
             }
 
-        file_name = params[0]
+        if input == None:
+            file_name = params[0]
 
     elif flags == [] and len(params) > 1:
         return {
@@ -61,36 +62,46 @@ def head(params=None, input = None):
         }
 
     else:
-        file_name = params[0]
+        if input == None:
+            file_name = params[0]
 
-    pid = Fs_state_manager.get_pid()
-    oid = Fs_state_manager.get_oid()
+    if input == None:
+        pid = Fs_state_manager.get_pid()
+        oid = Fs_state_manager.get_oid()
 
-    filters = {"oid": oid, "pid": pid, "name": file_name}
+        filters = {"oid": oid, "pid": pid, "name": file_name}
 
-    try:
-        response = call_api("files", params=filters)
+        try:
+            response = call_api("files", params=filters)
 
-        # Fetch file contents from the database
-        if response["status"] == "success":
-            file_contents = response["message"][0]["contents"]
+            # Fetch file contents from the database
+            if response["status"] == "success":
+                file_contents = response["message"][0]["contents"]
 
-            if file_contents is not None:
-                lines = file_contents.split("\n")
-                message = "\n".join (lines[:num_lines+1])
-                return {
-                    "status": "success",
-                    "message": message
-                }
+                if file_contents is not None:
+                    lines = file_contents.split("\n")
+                    message = "\n".join (lines[:num_lines+1])
+                    return {
+                        "status": "success",
+                        "message": message
+                    }
+                else:
+                    return {
+                        "status": "fail",
+                        "message": f"\nError: Could not read the contents of '{file_name}'."
+                    }
             else:
                 return {
                     "status": "fail",
-                    "message": f"\nError: Could not read the contents of '{file_name}'."
+                    "message": f"\nError: File '{file_name}' does not exist in the current directory."
                 }
-        else:
-            return {
-                "status": "fail",
-                "message": f"\nError: File '{file_name}' does not exist in the current directory."
-            }
-    except:
-        return {"status": "fail", "message": "\nCould not make a call to api"}
+        except:
+            return {"status": "fail", "message": "\nCould not make a call to api"}
+    else:
+        input_content = input["message"]
+        lines = input_content.split("\n")
+        message = "\n".join(lines[:num_lines+1])
+        return {
+            "status": "success",
+            "message": message
+        }
