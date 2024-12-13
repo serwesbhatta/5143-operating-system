@@ -110,7 +110,6 @@ def ls(params=None):
         # Process directories first
         for directory in directories:
             dir_name = directory["name"]
-            dir_name = f"{CYAN}{dir_name}{RESET}"  # Blue color for directories
             dir_user_permissions = []
 
             read_permission = directory["read_permission"]
@@ -155,7 +154,6 @@ def ls(params=None):
         # Process files
         for file_entry in files:
             file_name = file_entry["name"]
-            file_name = f"{MAGENTA}{file_name}{RESET}"  # Green color for files
             file_size = file_entry["size"]
 
             read_permission = file_entry["read_permission"]
