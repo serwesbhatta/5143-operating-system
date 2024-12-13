@@ -28,12 +28,16 @@ def chmod(params=None):
    path = params[1]
    name = ""
    file_exist = False
+   oid = Fs_state_manager.get_oid()
+   pid = Fs_state_manager.get_pid()
    
    file_path_response = file_path_helper(path)
 
    if file_path_response["status"] == "success" and file_path_response["file_exist"]:
       name = file_path_response["file_name"]
       file_exist = True
+      pid = file_path_response["pid"]
+      oid = file_path_response["oid"]
 
    else:
       dir_path = path
@@ -41,15 +45,14 @@ def chmod(params=None):
 
       if dir_path_response["status"] == "success" and dir_path_response["directories_exist"]:
          name = params[1].split("/")[-1]
+         pid = dir_path_response["pid"]
+         oid = dir_path_response["oid"]
 
       else:
          return {
             "status": "fail",
             "message": "\nPath not found."
          }
-   
-   oid = Fs_state_manager.get_oid()
-   pid = Fs_state_manager.get_pid()
 
    filters = {"file": file_exist, "oid": oid, "pid": pid, "name": name, "mode": mode}
 

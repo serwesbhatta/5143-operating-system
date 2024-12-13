@@ -17,23 +17,13 @@ def wc(params=None, input=None):
 
     if flags_response["invalid_flags"]:
         return {"status": "fail", "message": "\nOnvalid flags"}
-    
-    if "l" in flags and "w" in flags:
-        l_flag = True
-        w_flag = True
-        if "-lw" in params:
-            params.remove("-lw")
-        else:
-            params.remove("-l")
-            params.remove("-w")
 
-    elif "l" in flags:
-        l_flag = True
-        params.remove("-l")
-
-    elif "w" in flags:
-        w_flag = True
-        params.remove("-w")
+    if flags:
+        if "l" in flags:
+            l_flag = True
+        if "w" in flags:
+            w_flag = True
+        params = [param for param in params if not param.startswith("-")]
 
     if len(params) == 0:
         return {
@@ -54,7 +44,7 @@ def wc(params=None, input=None):
 
             if response["status"] == "success":
                 content = response["message"][0]["contents"]
-            
+
             else:
                 return {
                     "status": "fail",
@@ -93,4 +83,3 @@ def wc(params=None, input=None):
             "status": "success",
             "message": result
         }
-    
