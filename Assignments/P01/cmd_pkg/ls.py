@@ -131,6 +131,8 @@ def ls(params=None):
             if not show_hidden and dir_name.startswith("."):
                 continue
 
+            dir_name = f"{CYAN}{dir_name}{RESET}"  # Color the directory name
+
             if long_format:
                 # Build the output for long listing (-l) format
                 permissions_str = format_permissions(
@@ -174,6 +176,8 @@ def ls(params=None):
             # Skip hidden files unless -a is provided
             if not show_hidden and file_name.startswith("."):
                 continue
+
+            file_name = f"{MAGENTA}{file_name}{RESET}"  # Color the file name
 
             if long_format:
                 # Convert size to human-readable format if -h is provided
