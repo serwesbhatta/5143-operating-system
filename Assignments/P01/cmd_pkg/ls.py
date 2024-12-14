@@ -41,7 +41,10 @@ def ls(params=None):
     allowed_flags = ["l", "a", "h"]
     flags_response = get_flags(allowed_flags, params)
     if flags_response["invalid_flags"]:
-        return {"status": "fail", "message": "\nInvalid flags"}
+        return {
+            "status": "fail",
+            "message": "\nInvalid flags"
+        }
     flags = flags_response["flags"]
 
     if flags:
@@ -52,6 +55,7 @@ def ls(params=None):
         if "h" in flags:
             human_format = True
 
+
     # Fetch files and directories from the database
     pid = Fs_state_manager.get_pid()
     oid = Fs_state_manager.get_oid()
@@ -60,6 +64,7 @@ def ls(params=None):
         # Fetch files from the 'files' table
         file_filters = {"oid": oid, "pid": pid}
         files_response = call_api("files", params=file_filters)
+
     except:
         return {
             "status": "fail",
@@ -70,6 +75,7 @@ def ls(params=None):
         # Fetch directories from the 'directories' table
         dir_filters = {"oid": oid, "pid": pid}
         dirs_reponse = call_api("dirs", params=dir_filters)
+
     except:
         return {
             "status": "fail",
@@ -81,10 +87,6 @@ def ls(params=None):
 
     files = files_response["message"]
     directories = dirs_reponse["message"]
-
-    # Sort directories and files by name alphabetically
-    directories = sorted(directories, key=lambda d: d["name"].lower())
-    files = sorted(files, key=lambda f: f["name"].lower())
 
     # Prepare table output
     table = Texttable()
@@ -99,13 +101,8 @@ def ls(params=None):
             ["Permissions", "Owner", "Owner ID", "Size", "Created", "Modified", "Name"]
         )
 
-    # ANSI color codes
-    CYAN = "\033[96m"  # Cyan color for directories
-    MAGENTA = "\033[95m"  # Magenta color for files
-    RESET = "\033[0m"  # Reset color to default
-
-    # Process directories first
     if dirs_reponse["status"] == "success":
+        # Process directories first
         for directory in directories:
             dir_name = directory["name"]
             dir_user_permissions = []
@@ -113,11 +110,7 @@ def ls(params=None):
             read_permission = directory["read_permission"]
             write_permission = directory["write_permission"]
             execute_permission = directory["execute_permission"]
-            dir_user_permissions = [
-                read_permission,
-                write_permission,
-                execute_permission,
-            ]
+            dir_user_permissions = [read_permission, write_permission, execute_permission]
 
             world_read = directory["world_read"]
             world_write = directory["world_write"]
@@ -132,8 +125,6 @@ def ls(params=None):
             # Skip hidden directories unless -a is provided
             if not show_hidden and dir_name.startswith("."):
                 continue
-
-            dir_name = f"{CYAN}{dir_name}{RESET}"  # Color the directory name
 
             if long_format:
                 # Build the output for long listing (-l) format
@@ -154,8 +145,8 @@ def ls(params=None):
             else:
                 table.add_row([f"{dir_name}/"])
 
-    # Process files
     if files_response["status"] == "success":
+        # Process files
         for file_entry in files:
             file_name = file_entry["name"]
             file_size = file_entry["size"]
@@ -163,11 +154,7 @@ def ls(params=None):
             read_permission = file_entry["read_permission"]
             write_permission = file_entry["write_permission"]
             execute_permission = file_entry["execute_permission"]
-            file_user_permissions = [
-                read_permission,
-                write_permission,
-                execute_permission,
-            ]
+            file_user_permissions = [read_permission, write_permission, execute_permission]
 
             world_read = file_entry["world_read"]
             world_write = file_entry["world_write"]
@@ -182,8 +169,6 @@ def ls(params=None):
             # Skip hidden files unless -a is provided
             if not show_hidden and file_name.startswith("."):
                 continue
-
-            file_name = f"{MAGENTA}{file_name}{RESET}"  # Color the file name
 
             if long_format:
                 # Convert size to human-readable format if -h is provided

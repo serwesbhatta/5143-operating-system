@@ -355,7 +355,7 @@ class Scheduler:
                 job.get_job_burst(client_id, session_id, job.job_id)
                 self.ready_queue.enqueue(job, 0)
 
-    def process_ready_queue(self, algorithm=None,priority=False):
+    def process_ready_queue(self, algorithm=None, priority=False):
         """Processes the ready queue."""
         if algorithm == "MLFQ":
             for job in self.ready_queue.jobs:
@@ -402,7 +402,7 @@ class Scheduler:
             for job in self.running_queue.jobs:
                 if algorithm == "FCFS":
                     job.decrement_duration()
-                    
+
                     # For stats
                     for cpu in self.cpus:
                         if cpu.job and cpu.job.job_id == job.job_id:
@@ -434,7 +434,7 @@ class Scheduler:
 
                     job.decrement_duration()
                     job.time_slice_remaining -= 1
-                    
+
                     # For stats
                     for cpu in self.cpus:
                         if cpu.job and cpu.job.job_id == job.job_id:
@@ -530,7 +530,7 @@ class Scheduler:
                 for job in self.running_queue.jobs:
                     job.decrement_duration()
                     job.time_slice_remaining -= 1
-                    
+
                     # For stats
                     for cpu in self.cpus:
                         if cpu.job and cpu.job.job_id == job.job_id:
@@ -680,7 +680,4 @@ if __name__ == "__main__":
         "preemptive": preemptive,
     }
     scheduler.run(filters)
-    # stats = Stats()
-    # stats.calculate_stats(scheduler.exit_queue)
-    # stats.print_stats()
     scheduler.end_simulation(sched, n_cpus, n_ios, time_quantum)
