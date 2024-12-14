@@ -1,35 +1,29 @@
-
-# 5143 Shell Project
+# 5143 Scheduling Project
 ## Date: December 9, 2024
-### Group Contributors
+
+## Group Contributors
 - Sangam Lamichhane
 - Serwes Bhatta
 
 ## Project Summary
-
-Following its initialization, the program consistently executes these steps:
-- Captures a line from the standard input (`getch()`).
-- Performs logical parsing of the line into an array of components for command interpretation (managing command pipes).
-- Constructs a detailed list of arguments and flags for each command.
-- Executes the identified command correctly.
-- Handles multiple commands by passing output from one command as input to the next.
-- Directs output to designated files when output redirection is specified, rather than displaying it in the console.
+This project simulates a scheduling system using various components and API integration to manage job queues and system resources effectively. Following initialization, the system executes these essential operations.
 
 ## Setup Instructions
-** 1. Ensure all required packages from `requirements.txt` are installed.
-** 2. Execute `shell.py` (e.g., `python3 shell.py`).
-** 3. Enter your commands according to your needs (e.g., `ls -la`).
+Ensure all required packages from `requirements.txt` are installed.
 
-## Known Issues
-- Input redirection functionality is currently unavailable.
-- The left and right arrow keys do not function as expected.
-  
+## Directory Structure
+<img src="../images/cpu_scheduling_structure.png" alt="Structure">
+
+
+
 
 ## Project Files
+
 | #  | File               | Description                                         |
 |----|--------------------|-----------------------------------------------------|
-| 1  | `shell.py`         | Main script facilitating user interaction through the shell interface. |
-| 2  | `requirements.txt` | Contains all dependencies required for the project. |
-| 3  | `cmds`             | Directory containing files, each with specific commands and some helper files.  |
-
+| 1  | `api/`             | Contains API handling scripts like `getJob.py`, `getBurst.py` for fetching jobs and burst details. |
+| 2  | `components/`      | Includes core system components such as `device.py`, `job.py`, `queue.py`, `stats.py`, and `systemClock.py`. |
+| 3  | `systemClock.py`   | Manages system time simulations, located in the root directory of the project. |
+| 4  | `requirements.txt` | Contains all dependencies required for the project to ensure proper environment setup. |
+| 5  | `scheduler.py`    | Script to handle all of the scheduling algorithms. |
 
